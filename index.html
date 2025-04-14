@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Simulador Interactivo de Hornos Industriales</title>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.9.5/brython.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/brython@3.9.5/brython_stdlib.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #ff6b35;
+      --secondary: #2e86ab;
+      --dark: #333;
+      --light: #f4f4f4;
+      --success: #4caf50;
+      --warning: #ff9800;
+      --error: #f44336;
+    }
+    
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f2f5;
+      color: var(--dark);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .header {
+      background-color: var(--primary);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    /* Barra de Toggle para alternar vistas */
+    .view-toggle {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    }
+
+    .toggle-button {
+        background-color: var(--secondary);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        margin: 0 5px; /* Reducir el margen vertical a 0 */
+        border-radius: 30px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.3s, box-shadow 0.3s;
+    }
+    .toggle-button.active, .toggle-button:hover {
+      background-color: var(--primary);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .panel {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .panel-title {
+      margin-top: 0;
+      color: var(--primary);
+      border-bottom: 2px solid var(--light);
+      padding-bottom: 10px;
+    }
+    
+    #oven-display {
+      position: relative;
+      height: 400px;
+      background-color: #333;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .oven-body {
+      position: relative;
+      width: 90%;
+      height: 80%;
+      background-color: #555;
+      border-radius: 10px;
+      border: 8px solid #777;
+      overflow: hidden;
+    }
+    
+    .oven-door {
+      position: absolute;
+      top: 15%;
+      left: 10%;
+      width: 80%;
+      height: 70%;
+      background-color: #222;
+      border-radius: 8px;
+      border: 5px solid #666;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s ease-in-out;
+    }
+    
+    .oven-window {
+      width: 90%;
+      height: 90%;
+      background-color: #111;
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .heating-element {
+      position: absolute;
+      width: 80%;
+      height: 5px;
+      background-color: var(--primary);
+      top: 20%;
+      left: 10%;
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+    }
+    
+    .heating-element.bottom {
+      top: 80%;
+    }
+    
+    .heating-element.active {
+      opacity: 1;
+      box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
+      animation: glow 1.5s infinite alternate;
+    }
+    
+    @keyframes glow {
+      from { box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary); }
+      to { box-shadow: 0 0 15px var(--primary), 0 0 30px var(--primary); }
+    }
+    
+    .oven-contents {
+      position: absolute;
+      width: 60%;
+      height: 40%;
+      background-color: #ddd;
+      bottom: 20%;
+      left: 20%;
+      border-radius: 5px;
+      transition: all 0.5s ease-in-out;
+    }
+    
+    .oven-contents.cooking {
+      background-color: #b87333;
+    }
+    
+    .control-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .control-group {
+      margin-bottom: 20px;
+    }
+    
+    .control-label {
+      font-weight: 500;
+      margin-bottom: 8px;
+      display: block;
+    }
+    
+    button {
+      background-color: var(--secondary);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.3s;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      background-color: #1c5d7d;
+    }
+    
+    button.primary {
+      background-color: var(--primary);
+    }
+    
+    button.primary:hover {
+      background-color: #e05a2a;
+    }
+    
+    button.warning {
+      background-color: var(--warning);
+    }
+    
+    button.warning:hover {
+      background-color: #e08a00;
+    }
+    
+    button.error {
+      background-color: var(--error);
+    }
+    
+    button.error:hover {
+      background-color: #d32f2f;
+    }
+    
+    button.success {
+      background-color: var(--success);
+    }
+    
+    button.success:hover {
+      background-color: #3d8b40;
+    }
+    
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+    
+    select, input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      background-color: #f9f9f9;
+      margin-bottom: 10px;
+    }
+    
+    /* Control digital para la temperatura */
+    .digital-control {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .digital-display {
+      background-color: #000;
+      color: #ff5722;
+      font-family: 'Digital-7', 'Roboto', sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      padding: 8px 15px;
+      border-radius: 4px;
+      flex-grow: 1;
+      text-align: center;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+      border: 1px solid #444;
+      margin: 0 10px;
+    }
+    
+    .control-buttons {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .control-btn {
+      background-color: var(--secondary);
+      color: white;
+      border: none;
+      width: 40px;
+      height: 30px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 2px 0;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .control-btn:hover {
+      background-color: #1c5d7d;
+    }
+    
+    .temperature-display {
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      color: var(--primary);
+      margin-top: 10px;
+    }
+    
+    .status-panel {
+      background-color: var(--light);
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+    
+    .status-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    
+    .status-value {
+      font-size: 18px;
+    }
+    
+    .state-indicator {
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      margin-right: 10px;
+      background-color: #ccc;
+    }
+    
+    .state-indicator.active {
+      background-color: var(--success);
+      box-shadow: 0 0 5px var(--success);
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    }
+    
+    .log-container {
+      height: 200px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    
+    .log-entry {
+      margin-bottom: 5px;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .log-time {
+      font-weight: bold;
+      color: var(--secondary);
+    }
+    
+    .log-event {
+      font-weight: 500;
+    }
+    
+    .log-event.error {
+      color: var(--error);
+    }
+    
+    .log-event.warning {
+      color: var(--warning);
+    }
+    
+    .log-event.success {
+      color: var(--success);
+    }
+    
+    /* Estilos para el control de tiempo */
+    .time-control {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .time-display {
+      background-color: #000;
+      color: #4caf50;
+      font-family: 'Digital-7', 'Roboto', sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      padding: 8px 15px;
+      border-radius: 4px;
+      flex-grow: 1;
+      text-align: center;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+      border: 1px solid #444;
+      margin: 0 10px;
+    }
+    
+    .time-remaining {
+      text-align: center;
+      font-size: 18px;
+      margin-top: 10px;
+      color: var(--secondary);
+      font-weight: bold;
+    }
+    
+    .oven-contents.complete {
+      animation: pulse-content 1s infinite alternate;
+    }
+    
+    #oven-display.alert {
+      animation: pulse-border 1s infinite alternate;
+    }
+    
+    @keyframes pulse-content {
+      from { background-color: #b87333; }
+      to { background-color: #ffc107; }
+    }
+    
+    @keyframes pulse-border {
+      from { box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+      to { box-shadow: 0 0 25px #ff6b35; }
+    }
+    
+    /* Sección de Tablas de Transición */
+    #transition-tables {
+      display: none;
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+    th {
+      background-color: var(--primary);
+      color: white;
+    }
+    caption {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    /* Estilo para la simbología */
+  
+ 
+  .symbol-section {
+    margin-bottom: 25px;
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .symbol-title {
+    color: white;
+    background-color: #3498db;
+    padding: 8px 15px;
+    border-radius: 5px;
+    display: inline-block;
+    margin-bottom: 15px;
+    font-weight: bold;
+  }
+  
+  .symbol-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  
+  .symbol-item {
+    display: flex;
+    border-left: 3px solid #3498db;
+    padding: 8px;
+    background-color: #f5f9fc;
+    border-radius: 0 5px 5px 0;
+  }
+  
+  .symbol-code {
+    font-weight: bold;
+    color: #e74c3c;
+    margin-right: 10px;
+    min-width: 45px;
+  }
+  
+  .symbol-name {
+    color: #2c3e50;
+  }
+  
+  @media (max-width: 600px) {
+    .symbol-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  </style>
+</head>
+<body onload="brython()">
+  <div class="container">
+    <div class="header">
+      <h1>Simulador Interactivo de Hornos Industriales</h1>
+      <p>Sistema de Control Multimodal con Máquina de Estados Finitos</p>
+    </div>
+    
+    <!-- Barra de Toggle para alternar vistas -->
+    <div class="view-toggle">
+      <button id="btn-interactive" class="toggle-button active">Control Interactivo</button>
+      <button id="btn-tables" class="toggle-button">Tablas de Transición</button>
+    </div>
+    
+    <!-- Contenedor para la Vista Interactiva -->
+    <div id="control-interactive">
+      <div class="dashboard">
+        <div class="panel">
+          <h2 class="panel-title">Visualización</h2>
+          <div id="oven-display">
+            <div class="oven-body">
+              <div class="oven-door">
+                <div class="oven-window">
+                  <div class="heating-element top"></div>
+                  <div class="heating-element bottom"></div>
+                  <div class="oven-contents"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="status-panel">
+            <div class="status-title">Estado Actual:</div>
+            <div class="status-value">
+              <span class="state-indicator active"></span>
+              <span id="current-state">Apagado (A)</span>
+            </div>
+            <div class="status-title">Salida:</div>
+            <div class="status-value" id="current-output">O1 - Sistema apagado.</div>
+            <div class="temperature-display">
+              <span id="temp-display">0°C</span>
+            </div>
+            <div class="time-remaining" id="time-remaining-display"></div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <h2 class="panel-title">Panel de Control</h2>
+          <div class="control-panel">
+            <div class="control-group">
+              <div class="control-label">Controles principales</div>
+              <button id="btn-power" class="primary">Encender (IN)</button>
+              <button id="btn-reset" class="warning">Reiniciar (R)</button>
+              <button id="btn-sensors">Sensores OK (SO)</button>
+            </div>
+            
+            <div class="control-group">
+              <div class="control-label">Modo de Cocción</div>
+              <select id="cooking-mode">
+                <option value="none">Seleccione un modo</option>
+                <option value="regular">Regular</option>
+                <option value="convection">Convección</option>
+                <option value="grill">Grill</option>
+                <option value="defrost">Descongelar</option>
+              </select>
+              <button id="btn-select-mode">Seleccionar Modo (MSx)</button>
+            </div>
+            
+            <div class="control-group">
+              <div class="control-label">Configurar Temperatura</div>
+              <div class="digital-control">
+                <div class="control-buttons">
+                  <button class="control-btn" id="temp-up">▲</button>
+                  <button class="control-btn" id="temp-down">▼</button>
+                </div>
+                <div class="digital-display" id="digital-temp-display">0°C</div>
+              </div>
+              <button id="btn-temp-reached">Temperatura Alcanzada (SET-T/ TR)</button>
+            </div>
+            
+            <div class="control-group">
+              <div class="control-label">Configurar Tiempo de Cocción</div>
+              <div class="digital-control">
+                <div class="control-buttons">
+                  <button class="control-btn" id="time-up">▲</button>
+                  <button class="control-btn" id="time-down">▼</button>
+                </div>
+                <div class="digital-display" id="digital-time-display">00:00</div>
+              </div>
+              <button id="btn-set-time">Establecer Tiempo (SET-TI)</button>
+              <button id="btn-confirm-time">Confirmar (CONF)</button>
+            </div>
+            
+            <div class="control-group">
+              <div class="control-label">Progreso</div>
+              <button id="btn-stabilized">Estabilizado (ST)</button>
+              <button id="btn-time-complete">Tiempo Completado (TC)</button>
+              <button id="btn-verification-ok">Verificación OK (OK)</button>
+              <button id="btn-cool-enough">Enfriado (CE)</button>
+              <button id="btn-complete">Completar (CO)</button>
+            </div>
+            
+            <div class="control-group">
+              <div class="control-label">Eventos especiales</div>
+              <button id="btn-error" class="error">Generar Error (ER)</button>
+              <button id="btn-anomaly" class="warning">Anomalía (AN)</button>
+            </div>
+          </div>
+          
+          <h3>Registro de Eventos</h3>
+          <div class="log-container" id="event-log"></div>
+        </div>
+      </div>
+    </div>
+    
+      <!-- Contenedor para las Tablas de Transición y Salidas -->
+      <div id="transition-tables">
+        
+        <!-- Tabla de Transición de Estados Siguientes -->
+        <table>
+          <caption>Tabla de función f (Estado siguiente)</caption>
+          <thead>
+            <tr>
+              <th>S / I</th>
+              <th>IN</th>
+              <th>SO</th>
+              <th>ER</th>
+              <th>MSR</th>
+              <th>MSC</th>
+              <th>MSG</th>
+              <th>MSD</th>
+              <th>SET-T</th>
+              <th>SET-TI</th>
+              <th>CONF</th>
+              <th>TR</th>
+              <th>ST</th>
+              <th>TC</th>
+              <th>AN</th>
+              <th>OK</th>
+              <th>CE</th>
+              <th>CO</th>
+              <th>R</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>A</td>
+              <td>I</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+              <td>A</td>
+            </tr>
+            <tr>
+              <td>I</td>
+              <td>I</td>
+              <td>MS</td>
+              <td>ME</td>
+              <td>I</td>
+              <td>I</td>
+              <td>I</td>
+              <td>I</td>
+              <td>I</td>
+              <td>I</td>
+              <td>I</td>
+              <td>I</td>
+              <td>I</td>
+              <td>I</td>
+              <td>ME</td>
+              <td>I</td>
+              <td>I</td>
+              <td>I</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>MS</td>
+              <td>MS</td>
+              <td>MS</td>
+              <td>ME</td>
+              <td>REG</td>
+              <td>CON</td>
+              <td>GRI</td>
+              <td>DEF</td>
+              <td>MS</td>
+              <td>MS</td>
+              <td>MS</td>
+              <td>MS</td>
+              <td>MS</td>
+              <td>MS</td>
+              <td>ME</td>
+              <td>MS</td>
+              <td>MS</td>
+              <td>MS</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>REG</td>
+              <td>REG</td>
+              <td>REG</td>
+              <td>ME</td>
+              <td>REG</td>
+              <td>REG</td>
+              <td>REG</td>
+              <td>REG</td>
+              <td>T</td>
+              <td>REG</td>
+              <td>REG</td>
+              <td>REG</td>
+              <td>REG</td>
+              <td>REG</td>
+              <td>ME</td>
+              <td>REG</td>
+              <td>REG</td>
+              <td>REG</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>CON</td>
+              <td>CON</td>
+              <td>CON</td>
+              <td>ME</td>
+              <td>CON</td>
+              <td>CON</td>
+              <td>CON</td>
+              <td>CON</td>
+              <td>T</td>
+              <td>CON</td>
+              <td>CON</td>
+              <td>CON</td>
+              <td>CON</td>
+              <td>CON</td>
+              <td>ME</td>
+              <td>CON</td>
+              <td>CON</td>
+              <td>CON</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>ME</td>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>T</td>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>ME</td>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>GRI</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>ME</td>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>T</td>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>ME</td>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>DEF</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>T</td>
+              <td>T</td>
+              <td>T</td>
+              <td>ME</td>
+              <td>T</td>
+              <td>T</td>
+              <td>T</td>
+              <td>T</td>
+              <td>TI</td>
+              <td>T</td>
+              <td>T</td>
+              <td>T</td>
+              <td>T</td>
+              <td>T</td>
+              <td>ME</td>
+              <td>T</td>
+              <td>T</td>
+              <td>T</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>TI</td>
+              <td>TI</td>
+              <td>TI</td>
+              <td>ME</td>
+              <td>TI</td>
+              <td>TI</td>
+              <td>TI</td>
+              <td>TI</td>
+              <td>TI</td>
+              <td>TI</td>
+              <td>P</td>
+              <td>TI</td>
+              <td>TI</td>
+              <td>TI</td>
+              <td>ME</td>
+              <td>TI</td>
+              <td>TI</td>
+              <td>TI</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>P</td>
+              <td>P</td>
+              <td>P</td>
+              <td>ME</td>
+              <td>P</td>
+              <td>P</td>
+              <td>P</td>
+              <td>P</td>
+              <td>P</td>
+              <td>P</td>
+              <td>P</td>
+              <td>E</td>
+              <td>P</td>
+              <td>P</td>
+              <td>ME</td>
+              <td>P</td>
+              <td>P</td>
+              <td>P</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>E</td>
+              <td>E</td>
+              <td>E</td>
+              <td>ME</td>
+              <td>E</td>
+              <td>E</td>
+              <td>E</td>
+              <td>E</td>
+              <td>E</td>
+              <td>E</td>
+              <td>E</td>
+              <td>E</td>
+              <td>C</td>
+              <td>E</td>
+              <td>ME</td>
+              <td>E</td>
+              <td>E</td>
+              <td>E</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>C</td>
+              <td>C</td>
+              <td>C</td>
+              <td>ME</td>
+              <td>C</td>
+              <td>C</td>
+              <td>C</td>
+              <td>C</td>
+              <td>C</td>
+              <td>C</td>
+              <td>C</td>
+              <td>C</td>
+              <td>C</td>
+              <td>V</td>
+              <td>ME</td>
+              <td>C</td>
+              <td>C</td>
+              <td>C</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>V</td>
+              <td>V</td>
+              <td>V</td>
+              <td>ME</td>
+              <td>V</td>
+              <td>V</td>
+              <td>V</td>
+              <td>V</td>
+              <td>EN</td>
+              <td>V</td>
+              <td>V</td>
+              <td>V</td>
+              <td>V</td>
+              <td>V</td>
+              <td>ME</td>
+              <td>EN</td>
+              <td>V</td>
+              <td>V</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>EN</td>
+              <td>EN</td>
+              <td>EN</td>
+              <td>ME</td>
+              <td>EN</td>
+              <td>EN</td>
+              <td>EN</td>
+              <td>EN</td>
+              <td>EN</td>
+              <td>EN</td>
+              <td>EN</td>
+              <td>EN</td>
+              <td>EN</td>
+              <td>EN</td>
+              <td>ME</td>
+              <td>EN</td>
+              <td>F</td>
+              <td>EN</td>
+              <td>I</td>
+            </tr>
+            <tr>
+              <td>F</td>
+              <td>F</td>
+              <td>F</td>
+              <td>ME</td>
+              <td>F</td>
+              <td>F</td>
+              <td>F</td>
+              <td>F</td>
+              <td>F</td>
+              <td>F</td>
+              <td>F</td>
+              <td>F</td>
+              <td>F</td>
+              <td>F</td>
+              <td>ME</td>
+              <td>F</td>
+              <td>F</td>
+              <td>A</td>
+              <td>A</td>
+            </tr>
+            <tr>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>ME</td>
+              <td>I</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <!-- Tabla de Salidas -->
+        <table>
+          <caption>Tabla de función g (Símbolo de salida)</caption>
+          <thead>
+            <tr>
+              <th>S / I</th>
+              <th>IN</th>
+              <th>SO</th>
+              <th>ER</th>
+              <th>MSR</th>
+              <th>MSC</th>
+              <th>MSG</th>
+              <th>MSD</th>
+              <th>SET-T</th>
+              <th>SET-TI</th>
+              <th>CONF</th>
+              <th>TR</th>
+              <th>ST</th>
+              <th>TC</th>
+              <th>AN</th>
+              <th>OK</th>
+              <th>CE</th>
+              <th>CO</th>
+              <th>R</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>A</td>
+              <td>O2</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+              <td>O1</td>
+            </tr>
+            <tr>
+              <td>I</td>
+              <td>O2</td>
+              <td>O3</td>
+              <td>O16</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O16</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O2</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>MS</td>
+              <td>O3</td>
+              <td>O3</td>
+              <td>O16</td>
+              <td>O4</td>
+              <td>O5</td>
+              <td>O6</td>
+              <td>O7</td>
+              <td>O3</td>
+              <td>O3</td>
+              <td>O3</td>
+              <td>O3</td>
+              <td>O3</td>
+              <td>O3</td>
+              <td>O16</td>
+              <td>O3</td>
+              <td>O3</td>
+              <td>O3</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>REG</td>
+              <td>O4</td>
+              <td>O4</td>
+              <td>O16</td>
+              <td>O4</td>
+              <td>O4</td>
+              <td>O4</td>
+              <td>O4</td>
+              <td>O8</td>
+              <td>O4</td>
+              <td>O4</td>
+              <td>O4</td>
+              <td>O4</td>
+              <td>O4</td>
+              <td>O16</td>
+              <td>O4</td>
+              <td>O4</td>
+              <td>O4</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>CON</td>
+              <td>O5</td>
+              <td>O5</td>
+              <td>O16</td>
+              <td>O5</td>
+              <td>O5</td>
+              <td>O5</td>
+              <td>O5</td>
+              <td>O8</td>
+              <td>O5</td>
+              <td>O5</td>
+              <td>O5</td>
+              <td>O5</td>
+              <td>O5</td>
+              <td>O16</td>
+              <td>O5</td>
+              <td>O5</td>
+              <td>O5</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>GRI</td>
+              <td>O6</td>
+              <td>O6</td>
+              <td>O16</td>
+              <td>O6</td>
+              <td>O6</td>
+              <td>O6</td>
+              <td>O6</td>
+              <td>O8</td>
+              <td>O6</td>
+              <td>O6</td>
+              <td>O6</td>
+              <td>O6</td>
+              <td>O6</td>
+              <td>O16</td>
+              <td>O6</td>
+              <td>O6</td>
+              <td>O6</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>DEF</td>
+              <td>O7</td>
+              <td>O7</td>
+              <td>O16</td>
+              <td>O7</td>
+              <td>O7</td>
+              <td>O7</td>
+              <td>O7</td>
+              <td>O8</td>
+              <td>O7</td>
+              <td>O7</td>
+              <td>O7</td>
+              <td>O7</td>
+              <td>O7</td>
+              <td>O16</td>
+              <td>O7</td>
+              <td>O7</td>
+              <td>O7</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>T</td>
+              <td>O8</td>
+              <td>O8</td>
+              <td>O16</td>
+              <td>O8</td>
+              <td>O8</td>
+              <td>O8</td>
+              <td>O8</td>
+              <td>O8</td>
+              <td>O9</td>
+              <td>O8</td>
+              <td>O8</td>
+              <td>O8</td>
+              <td>O8</td>
+              <td>O16</td>
+              <td>O8</td>
+              <td>O8</td>
+              <td>O8</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>TI</td>
+              <td>O9</td>
+              <td>O9</td>
+              <td>O16</td>
+              <td>O9</td>
+              <td>O9</td>
+              <td>O9</td>
+              <td>O9</td>
+              <td>O9</td>
+              <td>O9</td>
+              <td>O10</td>
+              <td>O9</td>
+              <td>O9</td>
+              <td>O9</td>
+              <td>O16</td>
+              <td>O9</td>
+              <td>O9</td>
+              <td>O9</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>P</td>
+              <td>O10</td>
+              <td>O10</td>
+              <td>O16</td>
+              <td>O10</td>
+              <td>O10</td>
+              <td>O10</td>
+              <td>O10</td>
+              <td>O10</td>
+              <td>O10</td>
+              <td>O10</td>
+              <td>O11</td>
+              <td>O10</td>
+              <td>O10</td>
+              <td>O16</td>
+              <td>O10</td>
+              <td>O10</td>
+              <td>O10</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>E</td>
+              <td>O11</td>
+              <td>O11</td>
+              <td>O16</td>
+              <td>O11</td>
+              <td>O11</td>
+              <td>O11</td>
+              <td>O11</td>
+              <td>O11</td>
+              <td>O11</td>
+              <td>O11</td>
+              <td>O11</td>
+              <td>O12</td>
+              <td>O11</td>
+              <td>O16</td>
+              <td>O11</td>
+              <td>O11</td>
+              <td>O11</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>C</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O16</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O13</td>
+              <td>O16</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O12</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>V</td>
+              <td>O13</td>
+              <td>O13</td>
+              <td>O16</td>
+              <td>O13</td>
+              <td>O13</td>
+              <td>O13</td>
+              <td>O13</td>
+              <td>O13</td>
+              <td>O13</td>
+              <td>O13</td>
+              <td>O14</td>
+              <td>O13</td>
+              <td>O13</td>
+              <td>O16</td>
+              <td>O13</td>
+              <td>O13</td>
+              <td>O13</td>
+              <td>O2</td>
+            </tr>
+            <tr>
+              <td>EN</td>
+              <td>O14</td>
+              <td>O14</td>
+              <td>O16</td>
+              <td>O14</td>
+              <td>O14</td>
+              <td>O14</td>
+              <td>O14</td>
+              <td>O14</td>
+              <td>O14</td>
+              <td>O14</td>
+              <td>O14</td>
+              <td>O14</td>
+              <td>O14</td>
+              <td>O16</td>
+              <td>O14</td>
+              <td>O15</td>
+              <td>O14</td>
+              <td>O14</td>
+            </tr>
+            <tr>
+              <td>F</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O16</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O16</td>
+              <td>O15</td>
+              <td>O15</td>
+              <td>O1</td>
+              <td>O1</td>
+            </tr>
+            <tr>
+              <td>ME</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O16</td>
+              <td>O2</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="container">
+            <h2>Tabla de Significados de Entradas, Estados y Salidas</h2>
+            
+            <div class="symbol-section">
+              <div class="symbol-title">Estados</div>
+              <div class="symbol-grid">
+                <div class="symbol-item">
+                  <div class="symbol-code">A</div>
+                  <div class="symbol-name">Apagado</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">I</div>
+                  <div class="symbol-name">Inicialización</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">MS</div>
+                  <div class="symbol-name">Modo sin seleccionar</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">REG</div>
+                  <div class="symbol-name">Regular</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">CON</div>
+                  <div class="symbol-name">Convección</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">GRI</div>
+                  <div class="symbol-name">Grill</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">DEF</div>
+                  <div class="symbol-name">Descongelar</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">T</div>
+                  <div class="symbol-name">Temperatura configurada</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">TI</div>
+                  <div class="symbol-name">Tiempo configurado</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">P</div>
+                  <div class="symbol-name">Precalentamiento</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">E</div>
+                  <div class="symbol-name">Estabilización</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">C</div>
+                  <div class="symbol-name">Cocción</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">V</div>
+                  <div class="symbol-name">Verificación</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">EN</div>
+                  <div class="symbol-name">Enfriamiento</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">F</div>
+                  <div class="symbol-name">Finalización</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">ME</div>
+                  <div class="symbol-name">Manejo de errores</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="symbol-section">
+              <div class="symbol-title">Eventos (Entradas)</div>
+              <div class="symbol-grid">
+                <div class="symbol-item">
+                  <div class="symbol-code">IN</div>
+                  <div class="symbol-name">Iniciar</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">SO</div>
+                  <div class="symbol-name">Sensores_OK</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">ER</div>
+                  <div class="symbol-name">Error</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">MSR</div>
+                  <div class="symbol-name">Modo Regular</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">MSC</div>
+                  <div class="symbol-name">Modo Convección</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">MSG</div>
+                  <div class="symbol-name">Modo Grill</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">MSD</div>
+                  <div class="symbol-name">Modo Descongelar</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">SET-T</div>
+                  <div class="symbol-name">Configurar temperatura</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">SET-TI</div>
+                  <div class="symbol-name">Configurar tiempo</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">CONF</div>
+                  <div class="symbol-name">Confirmar</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">TR</div>
+                  <div class="symbol-name">Temperatura alcanzada (Temp. Reached)</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">ST</div>
+                  <div class="symbol-name">Estabilizado (Stabilized)</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">TC</div>
+                  <div class="symbol-name">Tiempo completado</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">AN</div>
+                  <div class="symbol-name">Anomalía</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">OK</div>
+                  <div class="symbol-name">Bien (Ok)</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">CE</div>
+                  <div class="symbol-name">Suficientemente frío (Cool Enough)</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">CO</div>
+                  <div class="symbol-name">Completado</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">R</div>
+                  <div class="symbol-name">Reset</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="symbol-section">
+              <div class="symbol-title">Salidas</div>
+              <div class="symbol-grid">
+                <div class="symbol-item">
+                  <div class="symbol-code">O1</div>
+                  <div class="symbol-name">Sistema apagado</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O2</div>
+                  <div class="symbol-name">Iniciado</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O3</div>
+                  <div class="symbol-name">Modo no seleccionado</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O4</div>
+                  <div class="symbol-name">Regular</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O5</div>
+                  <div class="symbol-name">Convección</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O6</div>
+                  <div class="symbol-name">Grill</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O7</div>
+                  <div class="symbol-name">Descongelar</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O8</div>
+                  <div class="symbol-name">Temperatura configurada por usuario</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O9</div>
+                  <div class="symbol-name">Tiempo configurado por usuario</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O10</div>
+                  <div class="symbol-name">Inicio de Precalentamiento</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O11</div>
+                  <div class="symbol-name">En proceso de estabilización</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O12</div>
+                  <div class="symbol-name">Cocinando</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O13</div>
+                  <div class="symbol-name">Para verificación</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O14</div>
+                  <div class="symbol-name">Enfriando</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O15</div>
+                  <div class="symbol-name">Finalizado</div>
+                </div>
+                <div class="symbol-item">
+                  <div class="symbol-code">O16</div>
+                  <div class="symbol-name">Problema o error</div>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+    <script type="text/python" src="control_hornos_logica.py"></script>
+</body>
+</html>
